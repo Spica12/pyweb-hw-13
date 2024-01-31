@@ -16,7 +16,7 @@ from src.schemas.user import UserCreateSchema
 
 class AuthService:
     pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-    SECRET_KEY = config.SECRET_KEY
+    SECRET_KEY = config.SECRET_KEY_JWT
     ALGORITHM = config.ALGORITHM
 
     oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
