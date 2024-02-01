@@ -15,6 +15,7 @@ psycopg-binary = "^3.1.17"
 asyncpg = "^0.29.0"
 passlib = "^1.7.4"
 python-jose = "^3.3.0"
+fastapi-mail = "^1.4.1"
 
 
 [build-system]

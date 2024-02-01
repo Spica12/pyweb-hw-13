@@ -1,12 +1,25 @@
-from fastapi import (APIRouter, Depends, HTTPException, Path, Query, Security,
-                     status)
-from fastapi.security import (HTTPAuthorizationCredentials, HTTPBearer,
-                              OAuth2PasswordRequestForm)
+from fastapi import (
+    APIRouter,
+    Depends,
+    HTTPException,
+    Path,
+    Query,
+    Security,
+    BackgroundTasks,
+    Request,
+    status,
+)
+from fastapi.security import (
+    HTTPAuthorizationCredentials,
+    HTTPBearer,
+    OAuth2PasswordRequestForm,
+)
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.dependencies.database import get_db
 from src.schemas.user import TokenSchema, UserCreateSchema, UserReadSchema
 from src.services.auth import auth_service
+from src.services.email import email_service
 
 router = APIRouter(tags=["auth"])
 get_refresh_token = HTTPBearer()
@@ -15,7 +28,12 @@ get_refresh_token = HTTPBearer()
 @router.post(
     "/signup", response_model=UserReadSchema, status_code=status.HTTP_201_CREATED
 )
-async def signup(body: UserCreateSchema, db: AsyncSession = Depends(get_db)):
+async def signup(
+    body: UserCreateSchema,
+    background_tasks: BackgroundTasks,
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+):
     exist_user = await auth_service.get_user_by_username(body.username, db=db)
     if exist_user:
         raise HTTPException(
@@ -23,8 +41,12 @@ async def signup(body: UserCreateSchema, db: AsyncSession = Depends(get_db)):
         )
     body.password = auth_service.get_password_hash(body.password)
     new_user = await auth_service.create_user(body, db)
+    background_tasks.add_task(
+        email_service.send_verification_mail, new_user.username, request.base_url
+    )
 
     return new_user
+    # return {"user": new_user, 'detail': 'User successfully created. Check your email for confirmation.'}
 
 
 @router.post("/login", response_model=TokenSchema)
