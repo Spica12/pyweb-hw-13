@@ -1,7 +1,7 @@
 import uuid
 from datetime import date
 
-from sqlalchemy import DateTime, ForeignKey, Integer, String, func
+from sqlalchemy import DateTime, ForeignKey, Integer, String, Boolean, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -19,6 +19,7 @@ class UserModel(Base):
     updated_at: Mapped[date] = mapped_column(
         "updated_at", DateTime, default=func.now(), onupdate=func.now()
     )
+    confirmed: Mapped[bool] = mapped_column(Boolean, default=False)
 
 
 class TokenModel(Base):

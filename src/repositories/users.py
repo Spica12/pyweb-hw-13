@@ -43,3 +43,8 @@ class UserRepo:
         token = token.scalar_one_or_none()
 
         return token.refresh_token
+
+    async def confirmed_email(self, email: str):
+        user = await self.get_user_by_username(email)
+        user.confirmed = True
+        await self.db.commit()
