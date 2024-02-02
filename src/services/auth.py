@@ -27,7 +27,7 @@ class AuthService:
         password=config.REDIS_PASSWORD,
     )
 
-    oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
+    oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/auth/login")
 
     # def __init__(self, db: AsyncSession):
     #     self.repo = UserRepo(db=db)

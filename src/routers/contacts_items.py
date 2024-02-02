@@ -8,7 +8,7 @@ from src.schemas.contact import ContactCreateSchema, ContactSchema
 from src.services.auth import auth_service
 from src.services.contact import ContactService
 
-router = APIRouter(tags=["contacts"])
+router = APIRouter(prefix="/contacts", tags=["contacts"])
 
 
 @router.get(

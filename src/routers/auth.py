@@ -22,7 +22,7 @@ from src.schemas.user import TokenSchema, UserCreateSchema, UserReadSchema
 from src.services.auth import auth_service
 from src.services.email import email_service
 
-router = APIRouter(tags=["auth"])
+router = APIRouter(prefix="/auth", tags=["auth"])
 get_refresh_token = HTTPBearer()
 
 

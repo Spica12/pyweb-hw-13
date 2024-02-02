@@ -13,6 +13,7 @@ class UserReadSchema(BaseModel):
     id: uuid.UUID
     username: EmailStr
     password: str
+    avatar: str | None
 
 
 class TokenSchema(BaseModel):

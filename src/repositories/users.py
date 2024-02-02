@@ -19,7 +19,9 @@ class UserRepo:
         return user
 
     async def create_user(self, body: UserCreateSchema):
-        new_user = UserModel(**body.model_dump())
+        new_user = UserModel(
+            **body.model_dump(), avatar=f"http://127.0.0.1:8000/api/users/default_avatar"
+        )
         self.db.add(new_user)
         await self.db.commit()
         await self.db.refresh(new_user)
@@ -48,3 +50,12 @@ class UserRepo:
         user = await self.get_user_by_username(email)
         user.confirmed = True
         await self.db.commit()
+
+    async def update_avatar_url(self, username: str, url: str | None):
+        user = await self.get_user_by_username(username)
+
+        user.avatar = url
+        await self.db.commit()
+        await self.db.refresh(user)
+
+        return user

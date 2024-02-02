@@ -20,6 +20,7 @@ class UserModel(Base):
         "updated_at", DateTime, default=func.now(), onupdate=func.now()
     )
     confirmed: Mapped[bool] = mapped_column(Boolean, default=False)
+    avatar: Mapped[str] = mapped_column(String(255), nullable=True)
 
 
 class TokenModel(Base):
