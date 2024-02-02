@@ -1,10 +1,12 @@
 from datetime import datetime, timedelta
+import pickle
 from typing import Optional
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from passlib.context import CryptContext
+import redis
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.conf.config import config
@@ -18,6 +20,12 @@ class AuthService:
     pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
     SECRET_KEY = config.SECRET_KEY_JWT
     ALGORITHM = config.ALGORITHM
+    cache = redis.Redis(
+        host=config.REDIS_DOMAIN,
+        port=config.REDIS_PORT,
+        db=0,
+        password=config.REDIS_PASSWORD,
+    )
 
     oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
 
@@ -115,9 +123,18 @@ class AuthService:
         except JWTError:
             raise credentials_exception
 
-        user = await UserRepo(db).get_user_by_username(username)
+        user_hash = str(username)
+        user = self.cache.get(user_hash)
         if user is None:
-            raise credentials_exception
+            print("user from DB")
+            user = await UserRepo(db).get_user_by_username(username)
+            if user is None:
+                raise credentials_exception
+            self.cache.set(user_hash, pickle.dumps(user))
+            self.cache.expire(user_hash, time=300)
+        else:
+            print("user from cache")
+            user = pickle.loads(user)
 
         return user
 
