@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
+from fastapi_limiter.depends import RateLimiter
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.dependencies.database import get_db
@@ -10,7 +11,11 @@ from src.services.contact import ContactService
 router = APIRouter(tags=["contacts"])
 
 
-@router.get("/", response_model=list[ContactSchema])
+@router.get(
+    "/",
+    response_model=list[ContactSchema],
+    dependencies=[Depends(RateLimiter(times=3, seconds=20))],
+)
 async def get_all_contacts(
     limit: int = Query(default=10, ge=10, le=500),
     offset: int = Query(default=0, ge=0),
@@ -52,7 +57,12 @@ async def find_contacts(
     return contact
 
 
-@router.post("/", response_model=ContactSchema, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/",
+    response_model=ContactSchema,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(RateLimiter(times=3, seconds=20))],
+)
 async def create_contact(
     body: ContactCreateSchema,
     db: AsyncSession = Depends(get_db),

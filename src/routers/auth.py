@@ -14,6 +14,7 @@ from fastapi.security import (
     HTTPBearer,
     OAuth2PasswordRequestForm,
 )
+from fastapi_limiter.depends import RateLimiter
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.dependencies.database import get_db
@@ -33,6 +34,7 @@ async def signup(
     background_tasks: BackgroundTasks,
     request: Request,
     db: AsyncSession = Depends(get_db),
+    dependencies=[Depends(RateLimiter(times=1, seconds=20))],
 ):
     exist_user = await auth_service.get_user_by_username(body.username, db=db)
     if exist_user:
@@ -49,7 +51,11 @@ async def signup(
     # return {"user": new_user, 'detail': 'User successfully created. Check your email for confirmation.'}
 
 
-@router.post("/login", response_model=TokenSchema)
+@router.post(
+    "/login",
+    response_model=TokenSchema,
+    dependencies=[Depends(RateLimiter(times=1, seconds=20))],
+)
 async def login(
     body: OAuth2PasswordRequestForm = Depends(), db: AsyncSession = Depends(get_db)
 ):
