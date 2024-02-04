@@ -13,7 +13,7 @@ from src.conf.config import config
 from src.dependencies.database import get_db
 from src.models.users import UserModel
 from src.repositories.users import UserRepo
-from src.schemas.user import UserCreateSchema
+from src.schemas.user import UserCreateSchema, UserResetPasswordSchema
 
 
 class AuthService:
@@ -163,6 +163,9 @@ class AuthService:
         self, email: str, db: AsyncSession = Depends(get_db)
     ) -> None:
         await UserRepo(db).confirmed_email(email)
+
+    async def change_password(self, body: UserResetPasswordSchema, db: AsyncSession):
+        await UserRepo(db).change_password(body)
 
 
 auth_service = AuthService()

@@ -4,7 +4,7 @@ from pathlib import Path
 
 
 class Settings(BaseSettings):
-    DB_URL: str = "postgresql+asyncpg://postgres:567234@localhost:5432/abc"
+    DB_URL: str = "postgresql+asyncpg://postgres:567234@0.0.0.0:5432/abc"
     SECRET_KEY_JWT: str = "1234567890"
 
     ALGORITHM: str = "HS256"
@@ -14,7 +14,7 @@ class Settings(BaseSettings):
     MAIL_PORT: int = 6379
     MAIL_SERVER: str = "postgres"
 
-    REDIS_DOMAIN: str = "localhost"
+    REDIS_DOMAIN: str = "0.0.0.0"
     REDIS_PORT: int = 6379
     REDIS_PASSWORD: str = ""
 
@@ -30,7 +30,7 @@ class Settings(BaseSettings):
 
     @field_validator("ALGORITHM")
     @classmethod
-    def validate_algorithm(cls, value):
+    def validade_algorithm(cls, value):
         if value not in ["HS256", "HS512"]:
             raise ValueError("Algorithm must be HS256 or HS512")
 

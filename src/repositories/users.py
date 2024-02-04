@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.dependencies.database import get_db
 from src.models.users import TokenModel, UserModel
-from src.schemas.user import UserCreateSchema
+from src.schemas.user import UserCreateSchema, UserResetPasswordSchema
 
 
 class UserRepo:
@@ -59,3 +59,8 @@ class UserRepo:
         await self.db.refresh(user)
 
         return user
+
+    async def change_password(self, body: UserResetPasswordSchema):
+        user = await self.get_user_by_username(body.username)
+        user.password = body.password
+        await self.db.commit()

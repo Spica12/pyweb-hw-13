@@ -1,12 +1,15 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends, HTTPException
 from fastapi_limiter import FastAPILimiter
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import text
 
 
 import redis.asyncio as redis
 
 from src.conf.config import config
+from src.dependencies.database import get_db
 from src.routers.auth import router as auth
 from src.routers.contacts_items import router as contacts_router
 from src.routers.users import router as users_router
@@ -43,6 +46,22 @@ async def startup():
     await FastAPILimiter.init(r)
 
 
-@app.get("/healthchecker")
-async def healthchecker():
-    return {"message": "Hello World!"}
+# @app.get("/healthchecker")
+# async def healthchecker():
+#     return {"message": "Hello World!"}
+
+
+@app.get("/api/healthchecker")
+async def healthchecker(db: AsyncSession = Depends(get_db)):
+    try:
+        # Make request
+        result = await db.execute(text("SELECT 1"))
+        result = result.fetchone()
+        if result is None:
+            raise HTTPException(
+                status_code=500, detail="Database is not configured correctly"
+            )
+        return {"message": "Welcome to FastAPI!"}
+    except Exception as e:
+        print(e)
+        raise HTTPException(status_code=500, detail="Error connecting to the database")

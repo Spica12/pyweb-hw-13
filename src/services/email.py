@@ -44,5 +44,24 @@ class EmailService:
         except ConnectionErrors as err:
             print(err)
 
+    async def send_request_to_reset_password(self, username: EmailStr, host: str):
+        try:
+            token_verification = await auth_service.create_email_token(
+                {"sub": username}
+            )
+            message = MessageSchema(
+                subject="Change user credentials",
+                recipients=[username],
+                template_body={
+                    "host": host,
+                    "username": username,
+                    "token": token_verification,
+                },
+                subtype=MessageType.html,
+            )
+            await self.fm.send_message(message, template_name="reset_password.html")
+        except ConnectionErrors as err:
+            print(err)
+
 
 email_service = EmailService()

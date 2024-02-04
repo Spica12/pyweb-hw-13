@@ -9,6 +9,7 @@ from fastapi import (
     Request,
     status,
 )
+from fastapi.responses import RedirectResponse
 from fastapi.security import (
     HTTPAuthorizationCredentials,
     HTTPBearer,
@@ -18,7 +19,12 @@ from fastapi_limiter.depends import RateLimiter
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.dependencies.database import get_db
-from src.schemas.user import TokenSchema, UserCreateSchema, UserReadSchema
+from src.schemas.user import (
+    TokenSchema,
+    UserCreateSchema,
+    UserReadSchema,
+    UserResetPasswordSchema,
+)
 from src.services.auth import auth_service
 from src.services.email import email_service
 
@@ -59,7 +65,6 @@ async def signup(
 async def login(
     body: OAuth2PasswordRequestForm = Depends(), db: AsyncSession = Depends(get_db)
 ):
-    # user = await repositories_users.get_user_by_username(body.username, db)
     user = await auth_service.get_user_by_username(body.username, db)
     if user is None:
         raise HTTPException(
@@ -121,7 +126,63 @@ async def confirmed_email(token: str, db: AsyncSession = Depends(get_db)):
             status_code=status.HTTP_400_BAD_REQUEST, detail="Verification error"
         )
     if user.confirmed:
-        return {'message': "Your email is already confirmed"}
+        return {"message": "Your email is already confirmed"}
     await auth_service.confirmed_email(email, db)
 
-    return {'message': 'Email confirmed'}
+    return {"message": "Email confirmed"}
+
+
+@router.get("/forgot_password/{username}")
+async def forgot_password(
+    username: str,
+    background_tasks: BackgroundTasks,
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+):
+    user = await auth_service.get_user_by_username(username, db)
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Email not found"
+        )
+    background_tasks.add_task(
+        email_service.send_request_to_reset_password, username, request.base_url
+    )
+
+    return {
+        "message": "A password reset email was sent to your email address. Check your email."
+    }
+
+
+@router.get("/reset_password/{token}")
+async def reset_password(token: str, db: AsyncSession = Depends(get_db)):
+    email = await auth_service.get_email_from_token(token)
+    user = await auth_service.get_user_by_username(email, db)
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Verification error"
+        )
+
+    return RedirectResponse(url="/api/auth/reset_password")
+
+
+@router.post("/reset_password")
+async def reset_password(
+    body: UserResetPasswordSchema,
+    db: AsyncSession = Depends(get_db),
+    dependencies=[Depends(RateLimiter(times=1, seconds=20))],
+):
+    exist_user = await auth_service.get_user_by_username(body.username, db=db)
+    if not exist_user:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="Account not found"
+        )
+    if body.password != body.confirm_password:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="Password is not correct"
+        )
+
+    body.password = auth_service.get_password_hash(body.password)
+
+    await auth_service.change_password(body, db)
+
+    return {"message": "You have changed your password!"}
